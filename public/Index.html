@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Troll Control</title>
+<style>
+    body {
+        font-family: 'Courier New', monospace;
+        background-color: #0f0f0f;
+        color: #00ff7f;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 30px;
+    }
+
+    h1 {
+        color: #00ff7f;
+        margin-bottom: 20px;
+    }
+
+    #client {
+        margin-bottom: 15px;
+        font-size: 1.2em;
+    }
+
+    textarea {
+        width: 700px;
+        height: 300px;
+        padding: 15px;
+        border-radius: 10px;
+        border: none;
+        background-color: #1e1e1e;
+        color: #00ff7f;
+        font-family: monospace;
+        font-size: 1em;
+        margin-bottom: 15px;
+        resize: none;
+    }
+
+    button {
+        padding: 12px 25px;
+        margin: 5px;
+        border: none;
+        border-radius: 10px;
+        background-color: #00ff7f;
+        color: #0f0f0f;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    button:hover {
+        background-color: #00cc66;
+        transform: scale(1.05);
+    }
+
+    .status {
+        margin-top: 10px;
+        font-size: 0.95em;
+        color: #ffeb3b;
+    }
+
+    #logBox {
+        width: 700px;
+        height: 200px;
+        margin-top: 15px;
+        padding: 10px;
+        background-color: #1a1a1a;
+        border-radius: 10px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 0.9em;
+        color: #00ff7f;
+        display: none; /* caché par défaut */
+    }
+</style>
+</head>
+<body>
+
+<h1>Troll Control</h1>
+<p id="client">Client actuel : Aucun</p>
+
+<textarea id="luaCode" placeholder="Écris ton code Lua ici..."></textarea>
+<br>
+<button onclick="executeCode()">💻 Execute</button>
+<button onclick="toggleLogs()">📜 Afficher/Masquer Logs</button>
+<p id="status" class="status"></p>
+
+<div id="logBox"></div>
+
+<script>
+async function updateClient() {
+    try {
+        const res = await fetch('/client');
+        const data = await res.json();
+        document.getElementById('client').innerText = 'Client actuel : ' + (data.name || 'Aucun');
+    } catch(e) { console.error(e); }
+}
+
+async function executeCode() {
+    const code = document.getElementById('luaCode').value;
+    if(!code) return alert("Le code ne peut pas être vide !");
+    try {
+        const res = await fetch('/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        document.getElementById('status').innerText = data.status;
+    } catch(e) { console.error(e); }
+}
+
+function toggleLogs() {
+    const logBox = document.getElementById('logBox');
+    logBox.style.display = logBox.style.display === 'none' ? 'block' : 'none';
+}
+
+// Récupération des logs du client toutes les 2 secondes
+async function fetchLogs() {
+    try {
+        const res = await fetch('/logs');
+        const data = await res.json();
+        if(data.logs) {
+            const logBox = document.getElementById('logBox');
+            logBox.innerText = data.logs.join('\n');
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+    } catch(e) { console.error(e); }
+}
+
+setInterval(updateClient, 1000);
+setInterval(fetchLogs, 2000);
+</script>
+
+</body>
+</html>
