@@ -12,13 +12,17 @@
         flex-direction: column;
         align-items: center;
         padding: 30px;
-        transition: background 0.5s;
     }
 
     h1 {
         color: #00ff7f;
         margin-bottom: 20px;
-        text-shadow: 0 0 10px #00ff7f;
+        animation: glow 1.5s infinite alternate;
+    }
+
+    @keyframes glow {
+        from { text-shadow: 0 0 5px #00ff7f; }
+        to { text-shadow: 0 0 20px #00ff7f; }
     }
 
     #client {
@@ -31,20 +35,13 @@
         height: 300px;
         padding: 15px;
         border-radius: 10px;
-        border: 2px solid #00ff7f;
-        background-color: #121212;
+        border: none;
+        background-color: #1e1e1e;
         color: #00ff7f;
         font-family: monospace;
         font-size: 1em;
         margin-bottom: 15px;
         resize: none;
-        transition: border 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    textarea:focus {
-        border-color: #00cc66;
-        box-shadow: 0 0 15px #00cc66;
-        outline: none;
     }
 
     button {
@@ -52,23 +49,22 @@
         margin: 5px;
         border: none;
         border-radius: 10px;
-        background: linear-gradient(135deg, #00ff7f, #00cc66);
+        background-color: #00ff7f;
         color: #0f0f0f;
         font-weight: bold;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
     }
 
     button:hover {
-        transform: translateY(-3px) scale(1.05);
-        box-shadow: 0 4px 15px rgba(0,255,127,0.4);
+        background-color: #00cc66;
+        transform: scale(1.05);
     }
 
     .status {
         margin-top: 10px;
         font-size: 0.95em;
         color: #ffeb3b;
-        min-height: 20px;
     }
 
     #logBox {
@@ -83,7 +79,15 @@
         font-size: 0.9em;
         color: #00ff7f;
         display: none;
-        transition: all 0.3s ease;
+    }
+
+    #loader {
+        width: 0;
+        height: 5px;
+        background: #00ff7f;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        transition: width 0.3s ease;
     }
 </style>
 </head>
@@ -93,10 +97,11 @@
 <p id="client">Client actuel : Aucun</p>
 
 <textarea id="luaCode" placeholder="Écris ton code Lua ici..."></textarea>
+<div id="loader"></div>
 <br>
 <button onclick="executeCode()">💻 Execute</button>
-<button onclick="unlinkClient()">❌ Ejecter client</button>
 <button onclick="toggleLogs()">📜 Afficher/Masquer Logs</button>
+<button onclick="unlinkClient()">❌ Unlink Client</button>
 <p id="status" class="status"></p>
 
 <div id="logBox"></div>
@@ -113,6 +118,12 @@ async function updateClient() {
 async function executeCode() {
     const code = document.getElementById('luaCode').value;
     if(!code) return alert("Le code ne peut pas être vide !");
+    const loader = document.getElementById('loader');
+    loader.style.width = '0';
+    loader.style.transition = 'none';
+    setTimeout(()=>loader.style.transition='width 0.3s ease',50);
+    loader.style.width = '100%';
+
     try {
         const res = await fetch('/execute', {
             method: 'POST',
@@ -121,7 +132,13 @@ async function executeCode() {
         });
         const data = await res.json();
         document.getElementById('status').innerText = data.status;
-    } catch(e) { console.error(e); }
+        loader.style.width = '0';
+    } catch(e) { console.error(e); loader.style.width='0'; }
+}
+
+function toggleLogs() {
+    const logBox = document.getElementById('logBox');
+    logBox.style.display = logBox.style.display === 'none' ? 'block' : 'none';
 }
 
 async function unlinkClient() {
@@ -130,25 +147,20 @@ async function unlinkClient() {
         const data = await res.json();
         document.getElementById('status').innerText = data.status;
         document.getElementById('client').innerText = 'Client actuel : Aucun';
-    } catch(e) { console.error(e); }
+    } catch(e){ console.error(e); }
 }
 
-function toggleLogs() {
-    const logBox = document.getElementById('logBox');
-    logBox.style.display = logBox.style.display === 'none' ? 'block' : 'none';
-}
-
-// Récupération des logs du client toutes les 2 secondes
+// Récupération des logs toutes les 2 secondes
 async function fetchLogs() {
     try {
         const res = await fetch('/logs');
         const data = await res.json();
-        if(data.logs) {
+        if(data.logs){
             const logBox = document.getElementById('logBox');
             logBox.innerText = data.logs.join('\n');
             logBox.scrollTop = logBox.scrollHeight;
         }
-    } catch(e) { console.error(e); }
+    } catch(e){ console.error(e); }
 }
 
 setInterval(updateClient, 1000);
