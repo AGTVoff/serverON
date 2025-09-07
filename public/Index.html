@@ -56,8 +56,6 @@
         color: #0f0f0f;
         font-weight: bold;
         cursor: pointer;
-        position: relative;
-        overflow: hidden;
         transition: all 0.3s ease;
     }
 
@@ -66,7 +64,7 @@
         box-shadow: 0 4px 15px rgba(0,255,127,0.4);
     }
 
-    #status {
+    .status {
         margin-top: 10px;
         font-size: 0.95em;
         color: #ffeb3b;
@@ -87,23 +85,6 @@
         display: none;
         transition: all 0.3s ease;
     }
-
-    /* Barre de chargement bouton execute */
-    .loader {
-        position: absolute;
-        left: 0;
-        top: 0;
-        height: 100%;
-        width: 0%;
-        background: rgba(0,255,127,0.3);
-        transition: width 0.3s ease;
-        z-index: 0;
-    }
-
-    button span {
-        position: relative;
-        z-index: 1;
-    }
 </style>
 </head>
 <body>
@@ -113,10 +94,10 @@
 
 <textarea id="luaCode" placeholder="Écris ton code Lua ici..."></textarea>
 <br>
-<button id="executeBtn" onclick="executeCode()"><span>💻 Execute</span><div class="loader"></div></button>
+<button onclick="executeCode()">💻 Execute</button>
 <button onclick="unlinkClient()">❌ Ejecter client</button>
 <button onclick="toggleLogs()">📜 Afficher/Masquer Logs</button>
-<p id="status"></p>
+<p id="status" class="status"></p>
 
 <div id="logBox"></div>
 
@@ -132,15 +113,6 @@ async function updateClient() {
 async function executeCode() {
     const code = document.getElementById('luaCode').value;
     if(!code) return alert("Le code ne peut pas être vide !");
-
-    const btn = document.getElementById('executeBtn');
-    const loader = btn.querySelector('.loader');
-
-    // démarrer animation
-    loader.style.width = '0%';
-    loader.style.transition = 'none';
-    setTimeout(()=>{ loader.style.transition = 'width 1s ease'; loader.style.width = '100%'; }, 50);
-
     try {
         const res = await fetch('/execute', {
             method: 'POST',
@@ -150,9 +122,6 @@ async function executeCode() {
         const data = await res.json();
         document.getElementById('status').innerText = data.status;
     } catch(e) { console.error(e); }
-    finally {
-        setTimeout(()=>{ loader.style.width='0%'; }, 1000); // reset loader après 1s
-    }
 }
 
 async function unlinkClient() {
@@ -169,6 +138,7 @@ function toggleLogs() {
     logBox.style.display = logBox.style.display === 'none' ? 'block' : 'none';
 }
 
+// Récupération des logs du client toutes les 2 secondes
 async function fetchLogs() {
     try {
         const res = await fetch('/logs');
