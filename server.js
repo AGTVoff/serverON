@@ -1,66 +1,71 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 const app = express();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Variables globales
 let connectedClient = null;
-let pendingCommand = null;
-let logs = [];
+let pendingLuaCode = null;
+let clientLogs = [];
 
 // Page principale
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'Index.html'));
+app.get('/', (req,res)=>{
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Enregistrement d'un client
-app.post('/connect', (req, res) => {
+// Enregistrer un client
+app.post('/connect', (req,res)=>{
     connectedClient = req.body.name;
-    logs.push(`[SERVER] Client connecté : ${connectedClient}`);
     console.log(`[SERVER] Client connecté : ${connectedClient}`);
     res.json({ status: 'ok' });
 });
 
-// Récupérer le client actuel
-app.get('/client', (req, res) => {
-    res.json({ name: connectedClient });
+// Déconnecter le client
+app.post('/unlink', (req,res)=>{
+    console.log(`[SERVER] Client déconnecté manuellement : ${connectedClient}`);
+    connectedClient = null;
+    pendingLuaCode = null;
+    clientLogs = [];
+    res.json({ status: 'Client déconnecté' });
 });
 
-// Exécution du code Lua envoyé depuis l'interface
-app.post('/execute', (req, res) => {
+// Endpoint pour envoyer le code Lua
+app.post('/execute', (req,res)=>{
+    const code = req.body.code;
     if(!connectedClient) return res.json({ status: 'Aucun client connecté' });
-    const { code } = req.body;
-    pendingCommand = code;
-    logs.push(`[SERVER] Code envoyé au client : ${code.substring(0,50)}...`);
-    console.log(`[SERVER] Code envoyé au client : ${code.substring(0,50)}...`);
+
+    pendingLuaCode = code;
+    console.log(`[SERVER] Code enregistré pour le client`);
     res.json({ status: 'Code envoyé au client' });
 });
 
-// Déconnecter le client manuellement
-app.post('/unlink', (req, res) => {
-    if (connectedClient) {
-        const log = `[SERVER] Client ${connectedClient} a été déconnecté manuellement.`;
-        console.log(log);
-        logs.push(log);
-        connectedClient = null;
-        pendingCommand = null;
-        res.json({ status: 'Client déconnecté' });
-    } else {
-        res.json({ status: 'Aucun client connecté' });
-    }
+// Endpoint que le client Roblox interroge
+app.get('/command', (req,res)=>{
+    res.json({ action: pendingLuaCode || null });
+    pendingLuaCode = null; // consommé après envoi
 });
 
-// Récupération des commandes côté client
-app.get('/command', (req, res) => {
-    res.json({ action: pendingCommand || null });
-    pendingCommand = null;
+// Endpoint pour récupérer le client actuel
+app.get('/client', (req,res)=>{
+    res.json({ name: connectedClient });
 });
 
 // Endpoint pour récupérer les logs
-app.get('/logs', (req, res) => {
-    res.json({ logs });
+app.get('/logs', (req,res)=>{
+    res.json({ logs: clientLogs });
 });
 
-app.listen(8080, () => console.log('Serveur lancé sur le port 8080'));
+// Endpoint pour recevoir logs du client
+app.post('/log', (req,res)=>{
+    if(req.body.log && connectedClient){
+        clientLogs.push(req.body.log);
+        if(clientLogs.length > 100) clientLogs.shift(); // garde seulement 100 dernières lignes
+    }
+    res.json({ status: 'ok' });
+});
+
+// Démarrage serveur
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, ()=>console.log(`Serveur lancé sur le port ${PORT}`));
