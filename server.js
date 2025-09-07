@@ -1,13 +1,14 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 let connectedClient = null;
-let pendingCommand = null; // { action: "execute", code: "..." }
-let logs = []; // stocke les logs du client
+let pendingCommand = null; // commande à exécuter côté client
+let logs = []; // logs des actions exécutées
 
 // Page principale
 app.get('/', (req, res) => {
@@ -17,8 +18,9 @@ app.get('/', (req, res) => {
 // Enregistrement d'un client
 app.post('/connect', (req, res) => {
     connectedClient = req.body.name;
-    console.log(`[SERVER] Client connecté : ${connectedClient}`);
-    logs.push(`[SERVER] Client connecté : ${connectedClient}`);
+    const log = `[SERVER] Client connecté : ${connectedClient}`;
+    console.log(log);
+    logs.push(log);
     res.json({ status: 'ok' });
 });
 
@@ -27,36 +29,35 @@ app.get('/client', (req, res) => {
     res.json({ name: connectedClient });
 });
 
-// Envoyer du code Lua à exécuter
+// Envoyer un script à exécuter
 app.post('/execute', (req, res) => {
-    if (connectedClient && req.body.code) {
-        pendingCommand = { action: "execute", code: req.body.code };
-        logs.push(`[SERVER] Code envoyé au client ${connectedClient}`);
-        console.log(`[SERVER] Code envoyé au client ${connectedClient}`);
-        res.json({ status: 'Code envoyé !' });
+    if (connectedClient) {
+        const { code } = req.body;
+        if (code) {
+            pendingCommand = { action: 'execute', code };
+            const log = `[SERVER] Code exécuté envoyé au client ${connectedClient}`;
+            console.log(log);
+            logs.push(log);
+            res.json({ status: 'Code envoyé au client' });
+        } else {
+            res.json({ status: 'Aucun code fourni' });
+        }
     } else {
-        res.json({ status: 'Aucun client connecté ou code vide' });
+        res.json({ status: 'Aucun client connecté' });
     }
 });
 
-// Endpoint que le client interrogera pour récupérer la commande
+// Endpoint que le client Roblox interrogera pour récupérer la commande
 app.get('/command', (req, res) => {
-    res.json(pendingCommand || null);
-    pendingCommand = null; // commande consommée
+    res.json(pendingCommand || {});
+    pendingCommand = null; // commande consommée après envoi
 });
 
-// Recevoir les logs du client
-app.post('/log', (req, res) => {
-    if(req.body.log) {
-        logs.push(req.body.log);
-        console.log(req.body.log);
-    }
-    res.json({ status: 'ok' });
-});
-
-// Endpoint pour récupérer les logs côté serveur
+// Récupérer les logs
 app.get('/logs', (req, res) => {
     res.json({ logs });
 });
 
-app.listen(3000, () => console.log('Serveur lancé sur http://localhost:3000'));
+// ✅ IMPORTANT : écouter le port Railway
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Serveur lancé sur port ${PORT}`));
