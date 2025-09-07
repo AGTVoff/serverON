@@ -4,91 +4,91 @@
 <meta charset="UTF-8">
 <title>Troll Control</title>
 <style>
-    body {
-        font-family: 'Courier New', monospace;
-        background-color: #0f0f0f;
-        color: #00ff7f;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 30px;
-    }
+body {
+    font-family: 'Courier New', monospace;
+    background-color: #0f0f0f;
+    color: #00ff7f;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px;
+}
 
-    h1 {
-        color: #00ff7f;
-        margin-bottom: 20px;
-        animation: glow 1.5s infinite alternate;
-    }
+h1 {
+    color: #00ff7f;
+    margin-bottom: 20px;
+    animation: glow 1.5s infinite alternate;
+}
 
-    @keyframes glow {
-        from { text-shadow: 0 0 5px #00ff7f; }
-        to { text-shadow: 0 0 20px #00ff7f; }
-    }
+@keyframes glow {
+    from { text-shadow: 0 0 5px #00ff7f; }
+    to { text-shadow: 0 0 20px #00ff7f; }
+}
 
-    #client {
-        margin-bottom: 15px;
-        font-size: 1.2em;
-    }
+#client {
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
 
-    textarea {
-        width: 700px;
-        height: 300px;
-        padding: 15px;
-        border-radius: 10px;
-        border: none;
-        background-color: #1e1e1e;
-        color: #00ff7f;
-        font-family: monospace;
-        font-size: 1em;
-        margin-bottom: 15px;
-        resize: none;
-    }
+textarea {
+    width: 700px;
+    height: 300px;
+    padding: 15px;
+    border-radius: 10px;
+    border: none;
+    background-color: #1e1e1e;
+    color: #00ff7f;
+    font-family: monospace;
+    font-size: 1em;
+    margin-bottom: 15px;
+    resize: none;
+}
 
-    button {
-        padding: 12px 25px;
-        margin: 5px;
-        border: none;
-        border-radius: 10px;
-        background-color: #00ff7f;
-        color: #0f0f0f;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
+button {
+    padding: 12px 25px;
+    margin: 5px;
+    border: none;
+    border-radius: 10px;
+    background-color: #00ff7f;
+    color: #0f0f0f;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
 
-    button:hover {
-        background-color: #00cc66;
-        transform: scale(1.05);
-    }
+button:hover {
+    background-color: #00cc66;
+    transform: scale(1.05);
+}
 
-    .status {
-        margin-top: 10px;
-        font-size: 0.95em;
-        color: #ffeb3b;
-    }
+.status {
+    margin-top: 10px;
+    font-size: 0.95em;
+    color: #ffeb3b;
+}
 
-    #logBox {
-        width: 700px;
-        height: 200px;
-        margin-top: 15px;
-        padding: 10px;
-        background-color: #1a1a1a;
-        border-radius: 10px;
-        overflow-y: auto;
-        font-family: monospace;
-        font-size: 0.9em;
-        color: #00ff7f;
-        display: none;
-    }
+#logBox {
+    width: 700px;
+    height: 200px;
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #1a1a1a;
+    border-radius: 10px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #00ff7f;
+    display: none;
+}
 
-    #loader {
-        width: 0;
-        height: 5px;
-        background: #00ff7f;
-        border-radius: 5px;
-        margin-bottom: 10px;
-        transition: width 0.3s ease;
-    }
+#loader {
+    width: 0;
+    height: 5px;
+    background: #00ff7f;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    transition: width 0.3s ease;
+}
 </style>
 </head>
 <body>
@@ -98,12 +98,13 @@
 
 <textarea id="luaCode" placeholder="Écris ton code Lua ici..."></textarea>
 <div id="loader"></div>
+
 <br>
 <button onclick="executeCode()">💻 Execute</button>
 <button onclick="toggleLogs()">📜 Afficher/Masquer Logs</button>
 <button onclick="unlinkClient()">❌ Unlink Client</button>
-<p id="status" class="status"></p>
 
+<p id="status" class="status"></p>
 <div id="logBox"></div>
 
 <script>
@@ -118,6 +119,8 @@ async function updateClient() {
 async function executeCode() {
     const code = document.getElementById('luaCode').value;
     if(!code) return alert("Le code ne peut pas être vide !");
+
+    // Animation loader
     const loader = document.getElementById('loader');
     loader.style.width = '0';
     loader.style.transition = 'none';
@@ -150,7 +153,6 @@ async function unlinkClient() {
     } catch(e){ console.error(e); }
 }
 
-// Récupération des logs toutes les 2 secondes
 async function fetchLogs() {
     try {
         const res = await fetch('/logs');
