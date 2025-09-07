@@ -12,17 +12,13 @@ body {
     flex-direction: column;
     align-items: center;
     padding: 30px;
+    transition: background-color 0.3s ease;
 }
 
 h1 {
     color: #00ff7f;
     margin-bottom: 20px;
-    animation: glow 1.5s infinite alternate;
-}
-
-@keyframes glow {
-    from { text-shadow: 0 0 5px #00ff7f; }
-    to { text-shadow: 0 0 20px #00ff7f; }
+    text-shadow: 0 0 10px #00ff7f;
 }
 
 #client {
@@ -42,6 +38,7 @@ textarea {
     font-size: 1em;
     margin-bottom: 15px;
     resize: none;
+    box-shadow: 0 0 15px #00ff7f55 inset;
 }
 
 button {
@@ -81,10 +78,10 @@ button:hover {
     display: none;
 }
 
-#loader {
-    width: 0;
+#loadingBar {
+    width: 0%;
     height: 5px;
-    background: #00ff7f;
+    background-color: #00ff7f;
     border-radius: 5px;
     margin-bottom: 10px;
     transition: width 0.3s ease;
@@ -97,12 +94,13 @@ button:hover {
 <p id="client">Client actuel : Aucun</p>
 
 <textarea id="luaCode" placeholder="Écris ton code Lua ici..."></textarea>
-<div id="loader"></div>
+<div id="loadingBar"></div>
 
-<br>
+<div>
 <button onclick="executeCode()">💻 Execute</button>
 <button onclick="toggleLogs()">📜 Afficher/Masquer Logs</button>
 <button onclick="unlinkClient()">❌ Unlink Client</button>
+</div>
 
 <p id="status" class="status"></p>
 <div id="logBox"></div>
@@ -119,13 +117,14 @@ async function updateClient() {
 async function executeCode() {
     const code = document.getElementById('luaCode').value;
     if(!code) return alert("Le code ne peut pas être vide !");
-
-    // Animation loader
-    const loader = document.getElementById('loader');
-    loader.style.width = '0';
-    loader.style.transition = 'none';
-    setTimeout(()=>loader.style.transition='width 0.3s ease',50);
-    loader.style.width = '100%';
+    const loading = document.getElementById('loadingBar');
+    loading.style.width = '0%';
+    let width = 0;
+    const interval = setInterval(() => {
+        if(width >= 100) clearInterval(interval);
+        loading.style.width = width + '%';
+        width += 5;
+    }, 15);
 
     try {
         const res = await fetch('/execute', {
@@ -135,8 +134,8 @@ async function executeCode() {
         });
         const data = await res.json();
         document.getElementById('status').innerText = data.status;
-        loader.style.width = '0';
-    } catch(e) { console.error(e); loader.style.width='0'; }
+    } catch(e) { console.error(e); }
+    setTimeout(() => loading.style.width='0%', 800);
 }
 
 function toggleLogs() {
@@ -144,25 +143,24 @@ function toggleLogs() {
     logBox.style.display = logBox.style.display === 'none' ? 'block' : 'none';
 }
 
+async function fetchLogs() {
+    try {
+        const res = await fetch('/logs');
+        const data = await res.json();
+        if(data.logs) {
+            const logBox = document.getElementById('logBox');
+            logBox.innerText = data.logs.join('\n');
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+    } catch(e) { console.error(e); }
+}
+
 async function unlinkClient() {
     try {
         const res = await fetch('/unlink', { method: 'POST' });
         const data = await res.json();
         document.getElementById('status').innerText = data.status;
-        document.getElementById('client').innerText = 'Client actuel : Aucun';
-    } catch(e){ console.error(e); }
-}
-
-async function fetchLogs() {
-    try {
-        const res = await fetch('/logs');
-        const data = await res.json();
-        if(data.logs){
-            const logBox = document.getElementById('logBox');
-            logBox.innerText = data.logs.join('\n');
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-    } catch(e){ console.error(e); }
+    } catch(e) { console.error(e); }
 }
 
 setInterval(updateClient, 1000);
